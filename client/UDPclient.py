@@ -55,7 +55,21 @@ class UDPclient:
                     print(f"File {filename} is empty.")
         except FileNotFoundError:
             print(f"File {filename} does not exist.")
-            
+
+    def start(self):
+
+        print(f"Starting UDP client at {addr}")
+        
+        
+if __name__ == "__main__":
+    client.start()
+
+
+
+
+
+
+
 
 
 
