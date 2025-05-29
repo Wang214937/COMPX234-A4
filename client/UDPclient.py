@@ -24,5 +24,26 @@ class UDPclient:
             except Exception as e:
                 print(f"Error sending {file_name}: {e}")
 
+    def download_files(self,filename,size,port):
+        addr = (self.ip, port)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.settimeout(5)
+        try:
+            sock.sendto(f"DOWNLOAD {filename} {size}".encode(), addr)
+            print(f"Requesting download of {filename} from {addr}")
+            with open(filename, 'wb') as f:
+                while True:
+                    data, _ = sock.recvfrom(1024)
+                    if not data:
+                        break
+                    f.write(data)
+            print(f"Downloaded {filename} successfully.")
+        except socket.timeout:
+            print(f"Timeout while downloading {filename}.")
+        except Exception as e:
+            print(f"Error downloading {filename}: {e}")
+        finally:
+            sock.close()
+
 
 
