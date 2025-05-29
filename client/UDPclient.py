@@ -11,10 +11,18 @@ class UDPclient:
         with open(file_list, 'r') as f:
             return [line.strip() for line in f if line.strip()]
 
-    def send_files(self): 
+    def send_files(self,socket,addr,timeout=5):
+        self.sock.settimeout(timeout) 
         for file_name in self.file_list:
-            with open(file_name, 'rb') as f:
-                data = f.read()
-                self.sock.sendto(data, (self.ip, self.port))
-                print(f"Sent {file_name} to {self.ip}:{self.port}")
-        self.sock.close()
+            try:
+                with open(file_name, 'rb') as f:
+                    data = f.read()
+                    socket.sendto(data, addr)
+                    print(f"Sent {file_name} to {addr}")
+            except FileNotFoundError:
+                print(f"File {file_name} not found.")
+            except Exception as e:
+                print(f"Error sending {file_name}: {e}")
+
+
+
