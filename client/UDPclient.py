@@ -45,5 +45,18 @@ class UDPclient:
         finally:
             sock.close()
 
+    def verify_files(self,filename):
+        try:
+            with open(filename, 'rb') as f:
+                data = f.read()
+                if data:
+                    print(f"File {filename} exists and is not empty.")
+                else:
+                    print(f"File {filename} is empty.")
+        except FileNotFoundError:
+            print(f"File {filename} does not exist.")
+            
+
+
 
 
