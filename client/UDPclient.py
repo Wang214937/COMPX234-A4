@@ -106,10 +106,11 @@ class UDPclient:
 
             if response.startswith("OK"):
                 parts = response.split() 
-                size = parts.index("size") + 1
-                port = parts.index("port") + 1
+                size_index = parts.index("size") + 1
+                port_index = parts.index("port") + 1
+                size = int(parts[size_index])
+                port = int(parts[port_index])
                 self.download_files(filename, size, port)
-                self.verify_files(filename)
             else:
                 print(f"Unexpected response format: {response}")
         else:
