@@ -1,11 +1,12 @@
 import socket
 
 class UDPclient:
-    def __init__(self, ip, port,file_list):
-        self.ip = ip
-        self.port = port
+    def __init__(self, host, port,file_list):
+        self.addr = (host, port)
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.file_list = self._load_file_list(file_list)
+        self.sock.settimeout(3)  # Set a default timeout for socket operations
+        self.retries = 2  # Number of retries for sending files
 
     def _load_file_list(self, file_list):
         with open(file_list, 'r') as f:
