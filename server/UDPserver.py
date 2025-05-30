@@ -2,6 +2,7 @@ import socket
 import threading
 import os
 from base64 import b64encode
+import sys
 
 
 class FileThread(threading.Thread):
@@ -57,7 +58,7 @@ class FileThread(threading.Thread):
                 response = f"FILE {self.filename} DATA {encoded}"
                 self.sock.sendto(response.encode('utf-8'), self.addr)
 
-                
+
 
 
 class UDPServer:
@@ -94,7 +95,10 @@ class UDPServer:
                 print(f"Error: {e}")
 
 if __name__ == "__main__":
-    port = 12345
-    file_list = ['file1.txt', 'file2.txt']  # Example file list
-    server = UDPServer(port, file_list)
+    if len(sys.argv) < 3:
+        print("Usage: python UDPserver.py <port> <file_list>")
+        sys.exit(1)
+
+    server = UDPServer(int(sys.argv[1]), sys.argv[2])
     server.start()
+    
