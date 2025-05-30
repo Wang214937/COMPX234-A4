@@ -50,17 +50,22 @@ class FileThread(threading.Thread):
                         start = int(parts[start_index])
                         end = int(parts[end_index])
                     except ValueError:
-                        err_message = f"ERROR Invalid request format for file {self.filename}"
-                        self.sock.sendto(err_message.encode('utf-8'), self.addr)
+                        err = f"ERROR Invalid request format for file {self.filename}"
+                        self.sock.sendto(err.encode('utf-8'), self.addr)
                         continue    
 
-                    if start < 0 or end > file_size or start >= end:
+                    if start < 0 or end >= file_size or start > end:
                         err = f"ERROR Invalid range: {start}-{end} for file {self.filename}"
                         self.sock.sendto(err.encode('utf-8'), self.addr)
                         continue
 
                     f.seek(start)
-                    chunk = f.read(end - start)
+                    chunk = f.read(end - start + 1)
+                    if not chunk:
+                        err = f"ERROR No data to send for {self.filename} in range {start}-{end}"
+                        self.sock.sendto(err.encode('utf-8'), self.addr)
+                        continue
+
                     encoded = b64encode(chunk).decode('utf-8')
                     response = f"FILE {self.filename} DATA {encoded}"
                     self.sock.sendto(response.encode('utf-8'), self.addr)
@@ -68,6 +73,7 @@ class FileThread(threading.Thread):
                 except socket.timeout:
                     print(f"Timeout waiting for request for {self.filename}")
                     continue
+
                 
 
 
