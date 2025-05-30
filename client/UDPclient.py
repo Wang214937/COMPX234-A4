@@ -98,10 +98,13 @@ class UDPclient:
         else:
             print(f"File {filename} is not verified.")
 
-
     def start(self):
+        for filename in self.file_list:
+            print(f"Requesting download for {filename}")
+            request = f"DOWNLOAD {filename}"
+            response = self.send_files(self.sock, request, self.addr, self.timeout)
+            
 
-        print(f"Starting UDP client at {addr}")
         
         
 if __name__ == "__main__":
