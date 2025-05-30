@@ -27,36 +27,48 @@ class FileThread(threading.Thread):
         file_size = os.path.getsize(self.file_path)
         with open(self.file_path, 'rb') as f:
             while True:
-                data,addr = self.sock.recvfrom(1024)
-                decodeed = data.decode('utf-8').strip()
-                if not decodeed.startswith("FILE"):
-                    print(f"Invalid request: {decodeed}")
-                    continue
-                if "CLOSE" in decodeed:
-                    print(f"Closing connection for {self.filename}")
-                    self.sock.sendto("CLOSE".encode('utf-8'), self.addr)
-                    break
-                
-                parts = decodeed.split()
                 try:
-                    start_index = parts.index("START") + 1
-                    end_index = parts.index("END") + 1
-                    start = int(parts[start_index])
-                    end = int(parts[end_index])
-                except ValueError:
-                    print(f"Invalid request: {decodeed}")
-                    continue    
+                    data,addr = self.sock.recvfrom(1024)
+                    decodeed = data.decode('utf-8').strip()
 
-                if start < 0 or end > file_size or start >= end:
-                    err = f"ERROR Invalid range: {start}-{end} for file {self.filename}"
-                    self.sock.sendto(err.encode('utf-8'), self.addr)
+                    if not decodeed.startswith("FILE"):
+                        print(f"Invalid request: {decodeed}")
+                        continue
+
+                    if "CLOSE" in decodeed:
+                        print(f"Closing connection for {self.filename}")
+                        self.sock.sendto("CLOSE".encode('utf-8'), self.addr)
+                        break
+                    
+                    parts = decodeed.split()
+                    if len(parts) < 2 or parts[1] != "FILE" or parts[1] != self.filename:
+                        continue
+
+                    try:
+                        start_index = parts.index("START") + 1
+                        end_index = parts.index("END") + 1
+                        start = int(parts[start_index])
+                        end = int(parts[end_index])
+                    except ValueError:
+                        print(f"Invalid request: {decodeed}")
+                        continue    
+
+                    if start < 0 or end > file_size or start >= end:
+                        err = f"ERROR Invalid range: {start}-{end} for file {self.filename}"
+                        self.sock.sendto(err.encode('utf-8'), self.addr)
+                        continue
+
+                    f.seek(start)
+                    chunk = f.read(end - start)
+                    encoded = b64encode(chunk).decode('utf-8')
+                    response = f"FILE {self.filename} DATA {encoded}"
+                    self.sock.sendto(response.encode('utf-8'), self.addr)
+                
+                except socket.timeout:
+                    print(f"Timeout waiting for request for {self.filename}")
                     continue
+                
 
-                f.seek(start)
-                chunk = f.read(end - start)
-                encoded = b64encode(chunk).decode('utf-8')
-                response = f"FILE {self.filename} DATA {encoded}"
-                self.sock.sendto(response.encode('utf-8'), self.addr)
 
 
 
