@@ -17,13 +17,22 @@ class FileThread(threading.Thread):
         
 
     def run(self):
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-            sock.bind(('', self.port))
-            print(f"Sending file {self.filename} to {self.addr} on port {self.port}")
-            with open(self.filename, 'rb') as f:
-                while chunk := f.read(1024):
-                    sock.sendto(chunk, self.addr)
-            print(f"File {self.filename} sent successfully.")
+        if not os.path.exists(self.file_path):
+            err = f"ERROR File not found: {self.filename}"
+            self.sock.sendto(err.encode('utf-8'), self.addr)
+            return
+        
+        file_size = os.path.getsize(self.file_path)
+        with open(self.file_path, 'rb') as f:
+            while True:
+                data = f.read(self.chunk_size)
+                if not data:
+                    break
+                encoded_data = data.encode('utf-8')
+                response = f"FILE {self.filename} {len(encoded_data)} DATA " + encoded_data.decode('utf-8')
+                self.sock.sendto(response.encode('utf-8'), self.addr)
+
+
 
 class UDPServer:
     def __init__(self, port, file_list):
