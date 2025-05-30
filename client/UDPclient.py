@@ -62,10 +62,17 @@ class UDPclient:
                     else:
                         raise ValueError(f"Unexpected response: {response}")
 
-                   
-                        
-        except Exception as e:
-            print(f"Error downloading {filename}: {e}")
+                close = f"GET {filename} {received_size} {size}"
+                sock.sendto(close.encode(), addr)
+                sock.settimeout(2)  # Short timeout for close confirmation
+                try:
+                    response, _ = sock.recvfrom(1024)
+                    if response.decode() == "CLOSE":
+                        print(f"Download of {filename} completed successfully.")
+                    else:
+                        print(f"Unexpected response after download: {response.decode()}")
+                except socket.timeout:
+                    print(f"Timeout waiting for close confirmation for {filename}.")
         finally:
             sock.close()
 
