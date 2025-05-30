@@ -2,6 +2,7 @@ import socket
 import os
 from base64 import b64decode, b64encode
 import sys
+import hashlib
 
 class UDPclient:
     def __init__(self, host, port,file_list):
@@ -81,6 +82,12 @@ class UDPclient:
         if not os.path.exists(file):
             print(f"File {filename} does not exist.")
             return
+        
+        client_hash = hashlib.md5()
+        with open(file, 'rb') as f:
+            while chunk := f.read(8192):
+                client_hash.update(chunk)
+                
         try:
             with open(filename, 'rb') as f:
                 data = f.read()
