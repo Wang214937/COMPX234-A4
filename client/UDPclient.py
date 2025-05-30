@@ -12,18 +12,18 @@ class UDPclient:
         with open(file_list, 'r') as f:
             return [line.strip() for line in f if line.strip()]
 
-    def send_files(self,socket,addr,timeout=5):
+    def send_files(self,socket,message,addr,timeout):
+        ctimeout = timeout
         self.sock.settimeout(timeout) 
-        for file_name in self.file_list:
+        for attempt in range(self.retries):
             try:
-                with open(file_name, 'rb') as f:
-                    data = f.read()
-                    socket.sendto(data, addr)
-                    print(f"Sent {file_name} to {addr}")
-            except FileNotFoundError:
-                print(f"File {file_name} not found.")
-            except Exception as e:
-                print(f"Error sending {file_name}: {e}")
+                socket.sendto(message.encode(), addr)
+                print(f"Sent message to {addr}: {message}")
+                return
+            except socket.timeout:
+                print(f"Attempt {attempt + 1} timed out. Retrying...")
+                self.sock.settimeout(ctimeout * (attempt + 2))
+
 
     def download_files(self,filename,size,port):
         addr = (self.ip, port)
