@@ -25,7 +25,8 @@ class FileThread(threading.Thread):
         file_size = os.path.getsize(self.file_path)
         with open(self.file_path, 'rb') as f:
             while True:
-                data = f.read(self.chunk_size)
+                data,addr = self.sock.recvfrom(1024)
+                decodeed = data.decode('utf-8').strip()
                 if not data:
                     break
                 encoded_data = data.encode('utf-8')
