@@ -50,7 +50,8 @@ class FileThread(threading.Thread):
                         start = int(parts[start_index])
                         end = int(parts[end_index])
                     except ValueError:
-                        print(f"Invalid request: {decodeed}")
+                        err_message = f"ERROR Invalid request format for file {self.filename}"
+                        self.sock.sendto(err_message.encode('utf-8'), self.addr)
                         continue    
 
                     if start < 0 or end > file_size or start >= end:
