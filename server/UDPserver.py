@@ -45,6 +45,10 @@ class FileThread(threading.Thread):
                     print(f"Invalid request: {decodeed}")
                     continue    
 
+                if start < 0 or end > file_size or start >= end:
+                    err = f"ERROR Invalid range: {start}-{end} for file {self.filename}"
+                    self.sock.sendto(err.encode('utf-8'), self.addr)
+                    continue
 
 
 
