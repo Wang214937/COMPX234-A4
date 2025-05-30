@@ -3,7 +3,7 @@ import threading
 import os
 from base64 import b64encode
 import sys
-
+import random
 
 class FileThread(threading.Thread):
     def __init__(self, filename, addr, port):
@@ -84,32 +84,29 @@ class FileThread(threading.Thread):
 
 
 class UDPServer:
-    def __init__(self, port, file_list):
-        self.port = port
-        self.file_list = self._load_file_list(file_list)
+    def __init__(self, port):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock.bind(('', self.port))
-        print(f"UDP Server started on port {self.port}")
+        self.sock.bind(('', port))
+        print(f"UDP Server started on port {port}")
 
     def start(self):
-        threading.Thread(target=self._listen_for_requests, daemon=True).start()
-        print(f"UDP Server is listening on port {self.port}")
         while True:
             try:
                 data, addr = self.sock.recvfrom(1024)
-                decoded_data = data.decode('utf-8')
-                print(f"Received request from {addr}: {decoded_data}")
+                decoded_data = data.decode('utf-8').strip()
 
                 if decoded_data.startswith("DOWNLOAD"):
                     filename = decoded_data.split()[1]
                     file_path = os.path.join(os.path(), filename)
 
-                    if os.path.isfile(file_path):
-                        port = 51234
+                    if os.path.exists(file_path):
+                        port = random.randint(50000, 51000)
                         size = os.path.getsize(file_path)
                         response = f"DOWNLOAD {filename} {port} {size}"
                         self.sock.sendto(response.encode('utf-8'), addr)
-                        self._send_file(filename, addr, port)
+                        file_thread = FileThread(filename, addr, port, self.sock)
+                        file_thread.start()
+
                     else:
                         response = f"ERROR File not found: {filename}"
                         self.sock.sendto(response.encode('utf-8'), addr)
