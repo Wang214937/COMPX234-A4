@@ -10,8 +10,8 @@ class UDPclient:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.file_list = self._load_file_list(file_list)
         self.sock.settimeout(3)  # Set a default timeout for socket operations
-        self.retries = 2  # Number of retries for sending files
-        self.timeout = 5  # Default timeout for operations
+        self.retries = 5  # Number of retries for sending files
+        self.timeout = 2  # Default timeout for operations
 
     def _load_file_list(self, file_list):
         with open(file_list, 'r') as f:
@@ -19,7 +19,6 @@ class UDPclient:
 
     def send_files(self,socket,message,addr,timeout):
         ctimeout = timeout
-        self.sock.settimeout(timeout) 
         for attempt in range(self.retries):
             try:
                 socket.sendto(message.encode(), addr)
@@ -29,6 +28,7 @@ class UDPclient:
                 ctimeout *= 2  # Increase timeout for each retry
                 self.sock.settimeout(ctimeout)
                 print(f"the {attempt + 1} attempt failed, retrying...")
+        raise TimeoutError(f"Failed to receive response after {self.retries} attempts.")
         
 
 
