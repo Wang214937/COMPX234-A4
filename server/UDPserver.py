@@ -114,10 +114,13 @@ class UDPServer:
                 print(f"Error: {e}")
 
 if __name__ == "__main__":
-    if len(sys.argv) < 3:
-        print("Usage: python UDPserver.py <port> <file_list>")
+    if len(sys.argv) != 2:
+        print("Usage: python UDPserver.py <port>")
         sys.exit(1)
 
+    if not os.path.exists("files"):
+        os.makedirs("files")
+        
     server = UDPServer(int(sys.argv[1]), sys.argv[2])
     server.start()
     
