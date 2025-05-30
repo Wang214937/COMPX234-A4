@@ -111,12 +111,18 @@ class UDPclient:
             response = self.send_files(self.sock, request, self.addr, self.timeout)
 
             if response.startswith("OK"):
-                parts = response.split() 
-                size_index = parts.index("size") + 1
-                port_index = parts.index("port") + 1
-                size = int(parts[size_index])
-                port = int(parts[port_index])
-                self.download_files(filename, size, port)
+                try:
+                    parts = response.split() 
+                    size_index = parts.index("size") + 1
+                    port_index = parts.index("port") + 1
+                    size = int(parts[size_index])
+                    port = int(parts[port_index])
+                except Exception as e:
+                    print(f"Error in response: {e}")
+
+                self.download_files(filename, size, port)    
+            elif response.startswith("ERROR"):
+                print(f"Error in response: {response}")
             else:
                 print(f"Unexpected response format: {response}")
         else:
