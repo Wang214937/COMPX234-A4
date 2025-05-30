@@ -120,7 +120,7 @@ if __name__ == "__main__":
 
     if not os.path.exists("files"):
         os.makedirs("files")
-        
-    server = UDPServer(int(sys.argv[1]), sys.argv[2])
+
+    server = UDPServer(int(sys.argv[1]))
     server.start()
     
