@@ -1,6 +1,7 @@
 import socket 
 import threading
 import os
+from base64 import b64encode
 
 
 class FileThread(threading.Thread):
@@ -50,6 +51,13 @@ class FileThread(threading.Thread):
                     self.sock.sendto(err.encode('utf-8'), self.addr)
                     continue
 
+                f.seek(start)
+                chunk = f.read(end - start)
+                encoded = b64encode(chunk).decode('utf-8')
+                response = f"FILE {self.filename} DATA {encoded}"
+                self.sock.sendto(response.encode('utf-8'), self.addr)
+
+                
 
 
 class UDPServer:
