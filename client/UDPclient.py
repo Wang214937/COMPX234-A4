@@ -119,6 +119,15 @@ class UDPclient:
         
         
 if __name__ == "__main__":
+    if len(sys.argv) != 4:
+        print("Usage: python UDPclient.py <host> <port> <file_list>")
+        sys.exit(1)
+
+    host = sys.argv[1]
+    port = int(sys.argv[2])
+    file_list = sys.argv[3]
+
+    client = UDPclient(host, port, file_list)
     client.start()
 
 
