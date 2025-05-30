@@ -36,16 +36,18 @@ class UDPclient:
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.settimeout(5)
         addr = (self.addr[0], port)
+
         try:
-            print(f"Starting download of {filename} from {addr[0]}:{addr[1]}")
+            print(f"[{filename}] Downloading {size} bytes" , end="", flush=True)
             received_size = 0
             with open(filename, 'wb') as f:
                 while received_size < size:
                     start = received_size
-                    end = start + 1000
+                    end = min (start + 1000 -1, size - 1)
 
                     request = f"GET {filename} {start} {end}"
                     response = self.send_files(sock, request, addr, self.timeout)
+
                     if not response.startswith(f"FILE {filename}"):
                         raise ValueError(f"Unexpected response: {response}")
                     
@@ -55,9 +57,12 @@ class UDPclient:
                             raise ValueError("Invalid response format.")
                         
                         encoded = response[start:]
-                        chunks = b64decode(encoded.encode())
+                        try:
+                            chunks = b64decode(encoded.encode())
+                        except Exception as e:
+                            raise IOError(f"Error writing to file {filename}: {e}")
+                        
                         f.write(chunks)
-
                         received_size += len(chunks)
                         print(f"Received {received_size} bytes of {filename}")
                     else:
@@ -68,12 +73,13 @@ class UDPclient:
                 sock.settimeout(2)  # Short timeout for close confirmation
                 try:
                     response, _ = sock.recvfrom(1024)
-                    if response.decode() == "CLOSE":
+                    if  "CLOSE_OK" in response.decode():
                         print(f"Download of {filename} completed successfully.")
                     else:
                         print(f"Unexpected response after download: {response.decode()}")
                 except socket.timeout:
                     print(f"Timeout waiting for close confirmation for {filename}.")
+            self.verify_files(filename)
         finally:
             sock.close()
 
