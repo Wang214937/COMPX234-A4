@@ -18,11 +18,13 @@ class UDPclient:
         for attempt in range(self.retries):
             try:
                 socket.sendto(message.encode(), addr)
-                print(f"Sent message to {addr}: {message}")
-                return
+                response, _ = socket.recvfrom(1024)
+                return response.decode()
             except socket.timeout:
-                print(f"Attempt {attempt + 1} timed out. Retrying...")
-                self.sock.settimeout(ctimeout * (attempt + 2))
+                ctimeout *= 2  # Increase timeout for each retry
+                self.sock.settimeout(ctimeout)
+                print(f"the {attempt + 1} attempt failed, retrying...")
+        
 
 
     def download_files(self,filename,size,port):
