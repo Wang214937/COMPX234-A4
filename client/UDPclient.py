@@ -7,6 +7,7 @@ class UDPclient:
         self.file_list = self._load_file_list(file_list)
         self.sock.settimeout(3)  # Set a default timeout for socket operations
         self.retries = 2  # Number of retries for sending files
+        self.timeout = 5  # Default timeout for operations
 
     def _load_file_list(self, file_list):
         with open(file_list, 'r') as f:
@@ -28,21 +29,18 @@ class UDPclient:
 
 
     def download_files(self,filename,size,port):
-        addr = (self.ip, port)
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.settimeout(5)
+        addr = (self.addr[0], port)
         try:
-            sock.sendto(f"DOWNLOAD {filename} {size}".encode(), addr)
-            print(f"Requesting download of {filename} from {addr}")
+            print(f"Starting download of {filename} from {addr[0]}:{addr[1]}")
+            received_size = 0
             with open(filename, 'wb') as f:
-                while True:
-                    data, _ = sock.recvfrom(1024)
-                    if not data:
-                        break
-                    f.write(data)
-            print(f"Downloaded {filename} successfully.")
-        except socket.timeout:
-            print(f"Timeout while downloading {filename}.")
+                while received_size < size:
+                    start = received_size
+                    end = start + 1000
+                   
+                        
         except Exception as e:
             print(f"Error downloading {filename}: {e}")
         finally:
