@@ -9,6 +9,12 @@ class FileThread(threading.Thread):
         self.filename = filename
         self.addr = addr
         self.port = port
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock.settimeout(5)
+        self.sock.bind(('', self.port))
+        self.chunk_size = 1000  # Size of each chunk to send
+        self.file_path = os.path.join("files", filename)
+        
 
     def run(self):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
