@@ -34,6 +34,18 @@ class FileThread(threading.Thread):
                     print(f"Closing connection for {self.filename}")
                     self.sock.sendto("CLOSE".encode('utf-8'), self.addr)
                     break
+                
+                parts = decodeed.split()
+                try:
+                    start_index = parts.index("START") + 1
+                    end_index = parts.index("END") + 1
+                    start = int(parts[start_index])
+                    end = int(parts[end_index])
+                except ValueError:
+                    print(f"Invalid request: {decodeed}")
+                    continue    
+
+
 
 
 class UDPServer:
