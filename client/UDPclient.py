@@ -93,15 +93,11 @@ class UDPclient:
             while chunk := f.read(8192):
                 server_hash.update(chunk)
 
-        try:
-            with open(filename, 'rb') as f:
-                data = f.read()
-                if data:
-                    print(f"File {filename} exists and is not empty.")
-                else:
-                    print(f"File {filename} is empty.")
-        except FileNotFoundError:
-            print(f"File {filename} does not exist.")
+        if client_hash.hexdigest() == server_hash.hexdigest():
+            print(f"File {filename} is verified.")
+        else:
+            print(f"File {filename} is not verified.")
+
 
     def start(self):
 
