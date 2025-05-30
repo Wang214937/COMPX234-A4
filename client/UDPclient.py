@@ -77,6 +77,10 @@ class UDPclient:
             sock.close()
 
     def verify_files(self,filename):
+        file = os.path.join("files", filename)
+        if not os.path.exists(file):
+            print(f"File {filename} does not exist.")
+            return
         try:
             with open(filename, 'rb') as f:
                 data = f.read()
