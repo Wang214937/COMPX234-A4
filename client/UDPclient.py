@@ -78,16 +78,21 @@ class UDPclient:
             sock.close()
 
     def verify_files(self,filename):
-        file = os.path.join("files", filename)
-        if not os.path.exists(file):
+        sfile = os.path.join("files", filename)
+        if not os.path.exists(sfile):
             print(f"File {filename} does not exist.")
             return
         
         client_hash = hashlib.md5()
-        with open(file, 'rb') as f:
+        with open(filename, 'rb') as f:
             while chunk := f.read(8192):
                 client_hash.update(chunk)
-                
+
+        server_hash = hashlib.md5()
+        with open(sfile, 'rb') as f:
+            while chunk := f.read(8192):
+                server_hash.update(chunk)
+
         try:
             with open(filename, 'rb') as f:
                 data = f.read()
