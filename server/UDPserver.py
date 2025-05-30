@@ -34,3 +34,9 @@ class UDPServer:
                         self.sock.sendto(response.encode('utf-8'), addr)
             except Exception as e:
                 print(f"Error: {e}")
+
+if __name__ == "__main__":
+    port = 12345
+    file_list = ['file1.txt', 'file2.txt']  # Example file list
+    server = UDPServer(port, file_list)
+    server.start()
