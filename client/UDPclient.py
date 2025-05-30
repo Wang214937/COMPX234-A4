@@ -1,4 +1,7 @@
 import socket
+import os
+from base64 import b64decode, b64encode
+import sys
 
 class UDPclient:
     def __init__(self, host, port,file_list):
@@ -45,6 +48,19 @@ class UDPclient:
                     if not response.startswith(f"FILE {filename}"):
                         raise ValueError(f"Unexpected response: {response}")
                     
+                    if "OK" in response:
+                        start = response.find('DATA') + 5
+                        if start == -1:
+                            raise ValueError("Invalid response format.")
+                        
+                        encoded = response[start:]
+                        chunks = b64decode(encoded.encode())
+                        f.write(chunks)
+
+                        received_size += len(chunks)
+                        print(f"Received {received_size} bytes of {filename}")
+                    else:
+                        raise ValueError(f"Unexpected response: {response}")
 
                    
                         
