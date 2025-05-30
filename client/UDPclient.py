@@ -39,6 +39,13 @@ class UDPclient:
                 while received_size < size:
                     start = received_size
                     end = start + 1000
+
+                    request = f"GET {filename} {start} {end}"
+                    response = self.send_files(sock, request, addr, self.timeout)
+                    if not response.startswith(f"FILE {filename}"):
+                        raise ValueError(f"Unexpected response: {response}")
+                    
+
                    
                         
         except Exception as e:
