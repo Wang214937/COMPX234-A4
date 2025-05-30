@@ -2,6 +2,23 @@ import socket
 import threading
 import os
 
+
+class FileThread(threading.Thread):
+    def __init__(self, filename, addr, port):
+        super().__init__()
+        self.filename = filename
+        self.addr = addr
+        self.port = port
+
+    def run(self):
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.bind(('', self.port))
+            print(f"Sending file {self.filename} to {self.addr} on port {self.port}")
+            with open(self.filename, 'rb') as f:
+                while chunk := f.read(1024):
+                    sock.sendto(chunk, self.addr)
+            print(f"File {self.filename} sent successfully.")
+
 class UDPServer:
     def __init__(self, port, file_list):
         self.port = port
