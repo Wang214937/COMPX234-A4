@@ -27,12 +27,13 @@ class FileThread(threading.Thread):
             while True:
                 data,addr = self.sock.recvfrom(1024)
                 decodeed = data.decode('utf-8').strip()
-                if not data:
+                if not decodeed.startswith("FILE"):
+                    print(f"Invalid request: {decodeed}")
+                    continue
+                if "CLOSE" in decodeed:
+                    print(f"Closing connection for {self.filename}")
+                    self.sock.sendto("CLOSE".encode('utf-8'), self.addr)
                     break
-                encoded_data = data.encode('utf-8')
-                response = f"FILE {self.filename} {len(encoded_data)} DATA " + encoded_data.decode('utf-8')
-                self.sock.sendto(response.encode('utf-8'), self.addr)
-
 
 
 class UDPServer:
