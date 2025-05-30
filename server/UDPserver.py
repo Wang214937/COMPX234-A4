@@ -14,8 +14,23 @@ class UDPServer:
         threading.Thread(target=self._listen_for_requests, daemon=True).start()
         print(f"UDP Server is listening on port {self.port}")
         while True:
-            data, addr = self.sock.recvfrom(1024)
-            decoded_data = data.decode('utf-8')
-            print(f"Received request from {addr}: {decoded_data}")
+            try:
+                data, addr = self.sock.recvfrom(1024)
+                decoded_data = data.decode('utf-8')
+                print(f"Received request from {addr}: {decoded_data}")
 
-            
+                if decoded_data.startswith("DOWNLOAD"):
+                    filename = decoded_data.split()[1]
+                    file_path = os.path.join(os.path(), filename)
+
+                    if os.path.isfile(file_path):
+                        port = 51234
+                        size = os.path.getsize(file_path)
+                        response = f"DOWNLOAD {filename} {port} {size}"
+                        self.sock.sendto(response.encode('utf-8'), addr)
+                        self._send_file(filename, addr, port)
+                    else:
+                        response = f"ERROR File not found: {filename}"
+                        self.sock.sendto(response.encode('utf-8'), addr)
+            except Exception as e:
+                print(f"Error: {e}")
