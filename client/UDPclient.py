@@ -84,25 +84,26 @@ class UDPclient:
             sock.close()
 
     def verify_files(self,filename):
-        sfile = os.path.join("files", filename)
-        if not os.path.exists(sfile):
-            print(" Server file missing, skip verification")
-            return
+        #sfile = os.path.join("files", filename)
+        #if not os.path.exists(sfile):
+        #    print(" Server file missing, skip verification")
+        #    return
         
         client_hash = hashlib.md5()
         with open(filename, 'rb') as f:
             while chunk := f.read(8192):
                 client_hash.update(chunk)
 
-        server_hash = hashlib.md5()
-        with open(sfile, 'rb') as f:
-            while chunk := f.read(8192):
-                server_hash.update(chunk)
-
-        if client_hash.hexdigest() == server_hash.hexdigest():
-            print(f"  MD5 verification OK: {client_hash.hexdigest()}")
-        else:
-            print(f"  MD5 verification FAILED! Client: {client_hash.hexdigest()}, Server: {server_hash.hexdigest()}")
+        #server_hash = hashlib.md5()
+        #with open(sfile, 'rb') as f:
+        #    while chunk := f.read(8192):
+        #        server_hash.update(chunk)
+ 
+        #if client_hash.hexdigest() == server_hash.hexdigest():
+        #    print(f"  MD5 verification OK: {client_hash.hexdigest()}")
+        #else:
+        #    print(f"  MD5 verification FAILED! Client: {client_hash.hexdigest()}, Server: {server_hash.hexdigest()}")
+        print(f"  MD5 hash: {client_hash.hexdigest()}")
 
     def start(self):
         for filename in self.file_list:
