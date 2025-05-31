@@ -13,7 +13,7 @@ class FileThread(threading.Thread):
         self.port = port
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.settimeout(5)
-        self.sock.bind(('', self.port))
+        self.sock.bind(('', port))
         self.chunk_size = 1000  # Size of each chunk to send
         self.file_path = os.path.join("files", filename)
         
@@ -30,44 +30,44 @@ class FileThread(threading.Thread):
                 while True:
                     try:
                         data,addr = self.sock.recvfrom(1024)
-                        decodeed = data.decode('utf-8').strip()
+                        decoded = data.decode('utf-8').strip()
 
-                        if not decodeed.startswith("FILE"):
+                        if not decoded.startswith("FILE"):
                             continue
 
-                        if "CLOSE" in decodeed:
+                        if "CLOSE" in decoded:
                             self.sock.sendto("FILE{self.filename} CLOSE OK".encode('utf-8'), self.addr)
                             break
                         
-                        parts = decodeed.split()
-                        if len(parts) < 2 or parts[1] != "FILE" or parts[1] != self.filename:
+                        parts = decoded.split()
+                        if len(parts) < 2 or parts[1] != self.filename:
                             continue
 
                         try:
-                            start_index = parts.index("START") + 1
+                            start_index = parts.index("GETSTART") + 1
                             end_index = parts.index("END") + 1
                             start = int(parts[start_index])
                             end = int(parts[end_index])
                         except (ValueError, IndexError):
                             err = f"FILE{self.filename} ERR INVALID_RANGE"
-                            self.sock.sendto(err.encode('utf-8'), self.addr)
+                            self.sock.sendto(err.encode('utf-8'), addr)
                             continue    
 
                         if start < 0 or end >= file_size or start > end:
                             err = f"FILE{self.filename} ERR INVALID_RANGE"
-                            self.sock.sendto(err.encode('utf-8'), self.addr)
+                            self.sock.sendto(err.encode('utf-8'), addr)
                             continue
 
                         f.seek(start)
                         chunk = f.read(end - start + 1)
                         if not chunk:
                             err = f"FILE{self.filename} ERR READ_ERROR"
-                            self.sock.sendto(err.encode('utf-8'), self.addr)
+                            self.sock.sendto(err.encode('utf-8'), addr)
                             continue
 
                         encoded = b64encode(chunk).decode('utf-8')
                         response = f"FILE {self.filename} OK START {start} END {end} DATA {encoded}"
-                        self.sock.sendto(response.encode('utf-8'), self.addr)
+                        self.sock.sendto(response.encode('utf-8'), addr)
 
                     except socket.timeout:
                         continue
@@ -108,7 +108,7 @@ class UDPServer:
                         file_thread.start()
                         print(f"Started transfer for {filename} on port {port}")
                     else:
-                        response = f"ERR {filename} not found"
+                        response = f"ERR {filename} NOT FOUND"
                         self.sock.sendto(response.encode('utf-8'), addr)
             except Exception as e:
                 print(f"Error: {e}")
