@@ -22,9 +22,9 @@ class FileThread(threading.Thread):
         try:
             if not os.path.exists(self.file_path):
                 err = f"FILE {self.filename} ERR FILE_NOT_FOUND"
-                self.sock.sendto(err.encode('utf-8'), self.addr)
+                self.sock.sendto(err.encode(), self.client_addr)
                 return
-
+            
             file_size = os.path.getsize(self.file_path)
             with open(self.file_path, 'rb') as f:
                 while True:
@@ -36,7 +36,7 @@ class FileThread(threading.Thread):
                             continue
 
                         if "CLOSE" in decoded:
-                            self.sock.sendto("FILE{self.filename} CLOSE OK".encode('utf-8'), self.addr)
+                            self.sock.sendto(f"FILE {self.filename} CLOSE_OK".encode('utf-8'), addr)
                             break
                         
                         parts = decoded.split()
@@ -66,7 +66,7 @@ class FileThread(threading.Thread):
                             continue
 
                         encoded = b64encode(chunk).decode('utf-8')
-                        response = f"FILE {self.filename} OK START {start} END {end} DATA {encoded}"
+                        response = (f"FILE {self.filename} OK START {start} END {end} DATA {encoded}")
                         self.sock.sendto(response.encode('utf-8'), addr)
 
                     except socket.timeout:
@@ -74,12 +74,12 @@ class FileThread(threading.Thread):
                     except Exception as e:
                         print(f"Transfer error : {e}")
                         break
-        
+
         except Exception as e:
-            print(f"Transfer error : {e}")
+            print(f"Transfer thread error: {e}")
         finally:
             self.sock.close()
-            print(f"Closed transfer port {self.port}")
+            print(f"Closed transfer port {self.data_port}")
 
 
 
@@ -96,7 +96,11 @@ class UDPServer:
                 decoded_data = data.decode('utf-8').strip()
 
                 if decoded_data.startswith("DOWNLOAD"):
-                    filename = decoded_data.split(maxsplit=1)[1].strip()
+                    try:
+                        filename = decoded_data.split(maxsplit=1)[1].strip()
+                    except IndexError:
+                        continue
+                        
                     file_path = os.path.join("files", filename)
 
                     if os.path.exists(file_path):
@@ -108,19 +112,19 @@ class UDPServer:
                         file_thread.start()
                         print(f"Started transfer for {filename} on port {port}")
                     else:
-                        response = f"ERR {filename} NOT FOUND"
+                        response = f"ERR {filename} NOT_FOUND"
                         self.sock.sendto(response.encode('utf-8'), addr)
+
             except Exception as e:
-                print(f"Error: {e}")
+                print(f"Main server error : {e}")
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python3 UDPserver.py <port>")
-        sys.exit(1)
+        exit(1)
 
     if not os.path.exists("files"):
         os.makedirs("files")
 
     server = UDPServer(int(sys.argv[1]))
     server.start()
-    
