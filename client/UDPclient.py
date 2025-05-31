@@ -86,7 +86,7 @@ class UDPclient:
     def verify_files(self,filename):
         sfile = os.path.join("files", filename)
         if not os.path.exists(sfile):
-            print("Server file missing, skip verification.")
+            print(" Server file missing, skip verification")
             return
         
         client_hash = hashlib.md5()
@@ -100,39 +100,37 @@ class UDPclient:
                 server_hash.update(chunk)
 
         if client_hash.hexdigest() == server_hash.hexdigest():
-            print(f"MD5 hash verification OK:{client_hash.hexdigest()}")
+            print(f"  MD5 verification OK: {client_hash.hexdigest()}")
         else:
-            print(f"MD5 hash verification FAILED ,Client: {client_hash.hexdigest()}, Server: {server_hash.hexdigest()}")
+            print(f"  MD5 verification FAILED! Client: {client_hash.hexdigest()}, Server: {server_hash.hexdigest()}")
 
     def start(self):
         for filename in self.file_list:
             print(f"\nRequesting {filename}...")
             try:
                 request = f"DOWNLOAD {filename}"
-                response = self.send_files(self.sock, request, self.addr, self.timeout)
-
+                response = self.send_files(self.sock, request, self.server_addr, self.timeout)
+                
                 if response.startswith("OK"):
                     try:
-                        parts = response.split() 
+                        parts = response.split()
                         size_index = parts.index("SIZE") + 1
                         port_index = parts.index("PORT") + 1
                         size = int(parts[size_index])
-                        port = int(parts[port_index])
+                        data_port = int(parts[port_index])
                     except (ValueError, IndexError):
                         raise Exception("Invalid response format")
 
-                    self.download_files(filename, size, port)    
+                    self.download_files(filename, size, data_port)
                 elif response.startswith("ERR"):
-                    print(f"Server error: {response[4:]}")
+                    print(f"  Server error: {response[4:]}")
                 else:
-                    print(f"Unknown response: {response}")
+                    print(f"  Unknown response: {response}")
+                    
             except Exception as e:
                 print(f"Failed to download {filename}: {str(e)}")
 
 
-
-        
-        
 if __name__ == "__main__":
     if len(sys.argv) != 4:
         print("Usage: python3 udp_client.py <HOST> <PORT> <FILE_LIST>")
