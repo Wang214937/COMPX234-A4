@@ -6,14 +6,14 @@ import sys
 import random
 
 class FileThread(threading.Thread):
-    def __init__(self, filename, addr, port):
+    def __init__(self, filename, client_addr, data_port):
         super().__init__()
         self.filename = filename
-        self.addr = addr
-        self.port = port
+        self.client_addr = client_addr
+        self.data_port = data_port
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.settimeout(5)
-        self.sock.bind(('', port))
+        self.sock.bind(('', data_port))
         self.chunk_size = 1000  # Size of each chunk to send
         self.file_path = os.path.join("files", filename)
         
