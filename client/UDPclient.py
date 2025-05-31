@@ -34,54 +34,52 @@ class UDPclient:
 
     def download_files(self,filename,size,port):
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.settimeout(2)
-        addr = (self.addr[0], port)
-
+        sock.settimeout(self.timeout)
+        addr = (self.server_addr[0], port)
+        
         try:
-            print(f"[{filename}] Downloading {size} bytes" , end='', flush=True)
+            print(f"[{filename}] Downloading {size} bytes", end='', flush=True)
             received_size = 0
             with open(filename, 'wb') as f:
                 while received_size < size:
                     start = received_size
-                    end = min (start + 1000 -1, size - 1)
+                    end = min(start + 1000 - 1, size - 1)
 
-                    request = f"FILE{filename} GETSTART {start} END {end}"
+                    request = f"FILE {filename} GETSTART {start} END {end}"
                     response = self.send_files(sock, request, addr, self.timeout)
 
                     if not response.startswith(f"FILE {filename}"):
                         raise Exception(f"Invalid response: {response}")
                     
                     if "OK" in response:
-                        start = response.find('DATA') + 5
-                        if start == -1:
+                        start = response.find("DATA") + 5
+                        if start < 5:
                             raise Exception("DATA field missing in response")
                         
                         encoded = response[start:]
                         try:
-                            chunks = b64decode(encoded.encode('utf-8'))
-                        except Exception:
+                            chunks = b64decode(encoded.encode())
+                        except:
                             raise Exception("Base64 decode error")
-                        
+
                         f.write(chunks)
-                        received_size += len(chunks)
+                        received_size += len(chunks) 
                         print("*", end='', flush=True)
                     else:
                         raise Exception(f"Server error: {response}")
-
+                        
                 close = f"FILE {filename} CLOSE"
-                sock.sendto(close.encode('utf-8'), addr)
-                sock.settimeout(2)  # Short timeout for close confirmation
+                sock.sendto(close.encode(), addr)
+                sock.settimeout(2)
                 try:
                     response, _ = sock.recvfrom(1024)
-                    if "CLOSE_OK" in response.decode('utf-8'):
-                        print("\n Transfer completed")
+                    if "CLOSE_OK" in response.decode():
+                        print("\n  Transfer completed")
                 except socket.timeout:
                     print("\n  Warning: Close confirmation missing")
 
             self.verify_files(filename)
-        except Exception as e:
-            print(f"\nError during download: {str(e)}")
-            raise
+            
         finally:
             sock.close()
 
