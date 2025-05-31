@@ -6,7 +6,7 @@ import hashlib
 
 class UDPclient:
     def __init__(self, host, port,file_list):
-        self.addr = (host, port)
+        self.server_addr = (host, port)
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.file_list = self.load_file_list(file_list)
         self.sock.settimeout(2)  # Set a default timeout for socket operations
@@ -17,17 +17,17 @@ class UDPclient:
         with open(filename, 'r') as f:
             return [line.strip() for line in f if line.strip()]
 
-    def send_files(self,socket,message,addr,timeout):
+    def send_files(self, socket, message, addr, timeout):
         ctimeout = timeout
         for attempt in range(self.retries):
             try:
                 socket.sendto(message.encode(), addr)
                 response, _ = socket.recvfrom(1024)
-                return response.decode('utf-8')
+                return response.decode()
             except socket.timeout:
-                ctimeout *= 2  # Increase timeout for each retry
+                ctimeout *= 2
                 socket.settimeout(ctimeout)
-                print(f"Retry {attempt + 1} / {self.retries}")
+                print(f"  Retry {attempt+1}/{self.retries}")
         raise Exception("Max retries exceeded")
 
 
@@ -59,7 +59,7 @@ class UDPclient:
                         encoded = response[start:]
                         try:
                             chunks = b64decode(encoded.encode('utf-8'))
-                        except :
+                        except Exception:
                             raise Exception("Base64 decode error")
                         
                         f.write(chunks)
@@ -79,6 +79,9 @@ class UDPclient:
                     print("\n  Warning: Close confirmation missing")
 
             self.verify_files(filename)
+        except Exception as e:
+            print(f"\nError during download: {str(e)}")
+            raise
         finally:
             sock.close()
 
