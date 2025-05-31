@@ -21,7 +21,7 @@ class FileThread(threading.Thread):
     def run(self):
         try:
             if not os.path.exists(self.file_path):
-                err = f"ERROR File not found: {self.filename}"
+                err = f"FILE {self.filename} ERR FILE_NOT_FOUND"
                 self.sock.sendto(err.encode('utf-8'), self.addr)
                 return
 
@@ -33,12 +33,10 @@ class FileThread(threading.Thread):
                         decodeed = data.decode('utf-8').strip()
 
                         if not decodeed.startswith("FILE"):
-                            print(f"Invalid request: {decodeed}")
                             continue
 
                         if "CLOSE" in decodeed:
-                            print(f"Closing connection for {self.filename}")
-                            self.sock.sendto("CLOSE".encode('utf-8'), self.addr)
+                            self.sock.sendto("FILE{self.filename} CLOSE OK".encode('utf-8'), self.addr)
                             break
                         
                         parts = decodeed.split()
@@ -50,36 +48,38 @@ class FileThread(threading.Thread):
                             end_index = parts.index("END") + 1
                             start = int(parts[start_index])
                             end = int(parts[end_index])
-                        except ValueError:
-                            err = f"ERROR Invalid request format for file {self.filename}"
+                        except (ValueError, IndexError):
+                            err = f"FILE{self.filename} ERR INVALID_RANGE"
                             self.sock.sendto(err.encode('utf-8'), self.addr)
                             continue    
 
                         if start < 0 or end >= file_size or start > end:
-                            err = f"ERROR Invalid range: {start}-{end} for file {self.filename}"
+                            err = f"FILE{self.filename} ERR INVALID_RANGE"
                             self.sock.sendto(err.encode('utf-8'), self.addr)
                             continue
 
                         f.seek(start)
                         chunk = f.read(end - start + 1)
                         if not chunk:
-                            err = f"ERROR No data to send for {self.filename} in range {start}-{end}"
+                            err = f"FILE{self.filename} ERR READ_ERROR"
                             self.sock.sendto(err.encode('utf-8'), self.addr)
                             continue
 
                         encoded = b64encode(chunk).decode('utf-8')
-                        response = f"FILE {self.filename} DATA {encoded}"
+                        response = f"FILE {self.filename} OK START {start} END {end} DATA {encoded}"
                         self.sock.sendto(response.encode('utf-8'), self.addr)
 
                     except socket.timeout:
-                        print(f"Timeout waiting for request for {self.filename}")
                         continue
+                    except Exception as e:
+                        print(f"Transfer error : {e}")
+                        break
         
         except Exception as e:
-            print(f"Error in FileThread for {self.filename}: {e}")
+            print(f"Transfer error : {e}")
         finally:
             self.sock.close()
-            print(f"FileThread for {self.filename} finished.")
+            print(f"Closed transfer port {self.port}")
 
 
 
@@ -96,26 +96,26 @@ class UDPServer:
                 decoded_data = data.decode('utf-8').strip()
 
                 if decoded_data.startswith("DOWNLOAD"):
-                    filename = decoded_data.split()[1]
-                    file_path = os.path.join(os.path(), filename)
+                    filename = decoded_data.split(maxsplit=1)[1].strip()
+                    file_path = os.path.join("files", filename)
 
                     if os.path.exists(file_path):
                         port = random.randint(50000, 51000)
                         size = os.path.getsize(file_path)
-                        response = f"DOWNLOAD {filename} {port} {size}"
+                        response = f"OK {filename} SIZE {size} PORT {port}"
                         self.sock.sendto(response.encode('utf-8'), addr)
-                        file_thread = FileThread(filename, addr, port, self.sock)
+                        file_thread = FileThread(filename, addr, port)
                         file_thread.start()
-
+                        print(f"Started transfer for {filename} on port {port}")
                     else:
-                        response = f"ERROR File not found: {filename}"
+                        response = f"ERR {filename} not found"
                         self.sock.sendto(response.encode('utf-8'), addr)
             except Exception as e:
                 print(f"Error: {e}")
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: python UDPserver.py <port>")
+        print("Usage: python3 UDPserver.py <port>")
         sys.exit(1)
 
     if not os.path.exists("files"):
