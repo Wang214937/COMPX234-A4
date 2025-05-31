@@ -27,9 +27,9 @@ class UDPclient:
             except socket.timeout:
                 ctimeout *= 2  # Increase timeout for each retry
                 self.sock.settimeout(ctimeout)
-                print(f"the {attempt + 1} attempt failed, retrying...")
-        raise TimeoutError(f"Failed to receive response after {self.retries} attempts.")
-        
+                print(f"Retry {attempt + 1} / {self.retries}")
+        raise Exception("Max retries reached.")
+
 
 
     def download_files(self,filename,size,port):
@@ -45,40 +45,39 @@ class UDPclient:
                     start = received_size
                     end = min (start + 1000 -1, size - 1)
 
-                    request = f"GET {filename} {start} {end}"
+                    request = f"FILE{filename} GETSTART {start} END {end}"
                     response = self.send_files(sock, request, addr, self.timeout)
 
                     if not response.startswith(f"FILE {filename}"):
-                        raise ValueError(f"Unexpected response: {response}")
+                        raise Exception(f"Unexpected response: {response}")
                     
                     if "OK" in response:
                         start = response.find('DATA') + 5
                         if start == -1:
-                            raise ValueError("Invalid response format.")
+                            raise Exception("DATA not found in response")
                         
                         encoded = response[start:]
                         try:
-                            chunks = b64decode(encoded.encode())
-                        except Exception as e:
-                            raise IOError(f"Error writing to file {filename}: {e}")
+                            chunks = b64decode(encoded.encode('utf-8'))
+                        except :
+                            raise Exception("Base64 decode error")
                         
                         f.write(chunks)
                         received_size += len(chunks)
-                        print(f"Received {received_size} bytes of {filename}")
+                        print("*", end="", flush=True)
                     else:
-                        raise ValueError(f"Unexpected response: {response}")
+                        raise  Exception(f"Server error: {response}")
 
-                close = f"GET {filename} {received_size} {size}"
+                close = f"FILE {filename} CLOSE"
                 sock.sendto(close.encode(), addr)
                 sock.settimeout(2)  # Short timeout for close confirmation
                 try:
                     response, _ = sock.recvfrom(1024)
                     if  "CLOSE_OK" in response.decode():
-                        print(f"Download of {filename} completed successfully.")
-                    else:
-                        print(f"Unexpected response after download: {response.decode()}")
+                        print("\n Transfer complete.")
                 except socket.timeout:
-                    print(f"Timeout waiting for close confirmation for {filename}.")
+                    print("\n Warning: Close confirmation missing.")
+
             self.verify_files(filename)
         finally:
             sock.close()
@@ -86,7 +85,7 @@ class UDPclient:
     def verify_files(self,filename):
         sfile = os.path.join("files", filename)
         if not os.path.exists(sfile):
-            print(f"File {filename} does not exist.")
+            print("Server file missing, skip verification.")
             return
         
         client_hash = hashlib.md5()
@@ -100,33 +99,36 @@ class UDPclient:
                 server_hash.update(chunk)
 
         if client_hash.hexdigest() == server_hash.hexdigest():
-            print(f"File {filename} is verified.")
+            print(f"MD5 hash verification OK:{client_hash.hexdigest()}")
         else:
-            print(f"File {filename} is not verified.")
+            print(f"MD5 hash verification FAILED: Client {client_hash.hexdigest()} , Server:{server_hash.hexdigest()}")
 
     def start(self):
         for filename in self.file_list:
             print(f"Requesting download for {filename}")
-            request = f"DOWNLOAD {filename}"
-            response = self.send_files(self.sock, request, self.addr, self.timeout)
+            try:
+                request = f"DOWNLOAD {filename}"
+                response = self.send_files(self.sock, request, self.addr, self.timeout)
 
-            if response.startswith("OK"):
-                try:
-                    parts = response.split() 
-                    size_index = parts.index("size") + 1
-                    port_index = parts.index("port") + 1
-                    size = int(parts[size_index])
-                    port = int(parts[port_index])
-                except Exception as e:
-                    print(f"Error in response: {e}")
+                if response.startswith("OK"):
+                    try:
+                        parts = response.split() 
+                        size_index = parts.index("size") + 1
+                        port_index = parts.index("port") + 1
+                        size = int(parts[size_index])
+                        port = int(parts[port_index])
+                    except (ValueError, IndexError):
+                        raise Exception(f"Invalid response format")
 
-                self.download_files(filename, size, port)    
-            elif response.startswith("ERROR"):
-                print(f"Error in response: {response}")
-            else:
-                print(f"Unexpected response format: {response}")
-        else:
-            print(f"Error in response: {response}")
+                    self.download_files(filename, size, port)    
+                elif response.startswith("ERR"):
+                    print(f"Server error: {response}")
+                else:
+                    print(f"Unexpected response format: {response}")
+            except Exception as e:
+                print(f"An error occurred: {e}")
+
+
 
         
         
