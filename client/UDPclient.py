@@ -38,7 +38,7 @@ class UDPclient:
         addr = (self.addr[0], port)
 
         try:
-            print(f"[{filename}] Downloading {size} bytes" , end="", flush=True)
+            print(f"[{filename}] Downloading {size} bytes" , end='', flush=True)
             received_size = 0
             with open(filename, 'wb') as f:
                 while received_size < size:
@@ -64,7 +64,7 @@ class UDPclient:
                         
                         f.write(chunks)
                         received_size += len(chunks)
-                        print("*", end="", flush=True)
+                        print("*", end='', flush=True)
                     else:
                         raise  Exception(f"Server error: {response}")
 
@@ -101,11 +101,11 @@ class UDPclient:
         if client_hash.hexdigest() == server_hash.hexdigest():
             print(f"MD5 hash verification OK:{client_hash.hexdigest()}")
         else:
-            print(f"MD5 hash verification FAILED: Client {client_hash.hexdigest()} , Server:{server_hash.hexdigest()}")
+            print(f"MD5 hash verification FAILED , Client: {client_hash.hexdigest()} , Server:{server_hash.hexdigest()}")
 
     def start(self):
         for filename in self.file_list:
-            print(f"Requesting download for {filename}")
+            print(f"\nRequesting {filename}...")
             try:
                 request = f"DOWNLOAD {filename}"
                 response = self.send_files(self.sock, request, self.addr, self.timeout)
@@ -113,8 +113,8 @@ class UDPclient:
                 if response.startswith("OK"):
                     try:
                         parts = response.split() 
-                        size_index = parts.index("size") + 1
-                        port_index = parts.index("port") + 1
+                        size_index = parts.index("SIZE") + 1
+                        port_index = parts.index("PORT") + 1
                         size = int(parts[size_index])
                         port = int(parts[port_index])
                     except (ValueError, IndexError):
@@ -124,9 +124,9 @@ class UDPclient:
                 elif response.startswith("ERR"):
                     print(f"Server error: {response}")
                 else:
-                    print(f"Unexpected response format: {response}")
+                    print(f"Unexpected response: {response}")
             except Exception as e:
-                print(f"An error occurred: {e}")
+                print(f"Failed to download {filename}: {str(e)}")
 
 
 
